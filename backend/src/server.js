@@ -280,6 +280,72 @@ app.post('/api/proposals/:id/approve', async (req, res) => {
   });
 });
 
+/**
+ * =====================
+ * REJECT PROPOSAL ENDPOINT
+ * =====================
+ */
+
+// Reject a pending proposal (no blockchain transaction)
+app.post('/api/proposals/:id/reject', (req, res) => {
+  const { id } = req.params;
+
+  db.get(`SELECT * FROM proposals WHERE id = ?`, [id], (err, proposal) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (!proposal) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    if (proposal.status !== 'PENDING') {
+      return res.status(400).json({ error: `Proposal is already ${proposal.status}. Only PENDING proposals can be rejected.` });
+    }
+
+    db.run(`UPDATE proposals SET status = 'BLOCKED' WHERE id = ?`, [id], function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      db.run(`INSERT INTO logs (proposal_id, message) VALUES (?, ?)`,
+        [id, 'Proposal rejected by user. No blockchain transaction executed.'],
+        (logErr) => {
+          if (logErr) console.error('Error saving log:', logErr.message);
+        }
+      );
+
+      res.json({
+        message: 'Proposal rejected successfully',
+        proposalId: id,
+        status: 'BLOCKED'
+      });
+    });
+  });
+});
+
+/**
+ * =====================
+ * RESET DAILY LIMIT ENDPOINT
+ * =====================
+ */
+
+// Reset daily spending limit (for testing/demo purposes)
+app.post('/api/limits/reset', (req, res) => {
+  db.run(`UPDATE limits SET current_spent = 0, updated_at = CURRENT_TIMESTAMP WHERE type = 'DAILY'`, function (err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Daily limit not found' });
+    }
+
+    db.run(`INSERT INTO logs (proposal_id, message) VALUES (NULL, 'Daily spending limit has been reset to 0.')`, (logErr) => {
+      if (logErr) console.error('Error saving log:', logErr.message);
+    });
+
+    res.json({ message: 'Daily spending limit reset successfully' });
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`SpendGuard AI backend server is running on port ${PORT}`);

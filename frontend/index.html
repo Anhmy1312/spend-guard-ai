@@ -22,6 +22,10 @@
     .status-pending { @apply bg-yellow-500/20 text-yellow-300 border-yellow-500/30; }
     .status-approved { @apply bg-green-500/20 text-green-300 border-green-500/30; }
     .status-blocked { @apply bg-red-500/20 text-red-300 border-red-500/30; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .toast { animation: slideIn 0.3s ease-out; }
   </style>
 </head>
 <body class="bg-dark text-white min-h-screen">
@@ -48,10 +52,15 @@
         
         <!-- Spending Limits Card -->
         <div class="bg-card rounded-xl p-5 border border-gray-800">
-          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-            <svg class="w-5 h-5 text-near" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            Spending Limits
-          </h2>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+              <svg class="w-5 h-5 text-near" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Spending Limits
+            </h2>
+            <button onclick="resetDailyLimit()" class="text-xs text-gray-400 hover:text-near transition" title="Reset daily spent to 0">
+              Reset Daily
+            </button>
+          </div>
           <div id="limits-list" class="space-y-3">
             <!-- Loaded dynamically -->
           </div>
@@ -88,8 +97,9 @@
               <label class="block text-xs text-gray-400 mb-1">Description</label>
               <input type="text" id="sim-desc" value="Payment for compute service" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
             </div>
-            <button type="submit" class="w-full bg-near text-black font-semibold py-2 rounded-lg hover:bg-green-400 transition">
-              Submit AI Proposal
+            <button type="submit" id="sim-submit-btn" class="w-full bg-near text-black font-semibold py-2 rounded-lg hover:bg-green-400 transition flex items-center justify-center gap-2">
+              <span id="sim-btn-text">Submit AI Proposal</span>
+              <svg id="sim-spinner" class="w-4 h-4 spinner hidden" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
             </button>
           </form>
         </div>
@@ -112,8 +122,42 @@
     </div>
   </div>
 
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
   <script>
     const API_BASE = 'http://localhost:3000';
+
+    // Toast notification
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bgColor = type === 'success' ? 'bg-green-500/20 border-green-500/30 text-green-300' :
+                      type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-300' :
+                      'bg-blue-500/20 border-blue-500/30 text-blue-300';
+      toast.className = `toast px-4 py-3 rounded-lg border ${bgColor} text-sm max-w-sm shadow-lg`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Show/hide spinner
+    function setButtonLoading(btnId, textId, spinnerId, loading) {
+      const btn = document.getElementById(btnId);
+      const text = document.getElementById(textId);
+      const spinner = document.getElementById(spinnerId);
+      if (loading) {
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        text.textContent = 'Processing...';
+        spinner.classList.remove('hidden');
+      } else {
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        text.textContent = 'Submit AI Proposal';
+        spinner.classList.add('hidden');
+      }
+    }
 
     // Load NEAR wallet status
     async function loadNearStatus() {
@@ -146,7 +190,7 @@
               <span class="text-near font-bold">${limit.max_amount} NEAR</span>
             </div>
             <div class="w-full bg-gray-800 rounded-full h-2">
-              <div class="bg-near h-2 rounded-full" style="width: ${Math.min((limit.current_spent / limit.max_amount) * 100, 100)}%"></div>
+              <div class="bg-near h-2 rounded-full transition-all duration-500" style="width: ${Math.min((limit.current_spent / limit.max_amount) * 100, 100)}%"></div>
             </div>
             <p class="text-xs text-gray-500 mt-1">Spent: ${limit.current_spent} / ${limit.max_amount} NEAR</p>
           </div>
@@ -189,25 +233,31 @@
           return `
             <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
               <div class="flex items-start justify-between mb-2">
-                <div>
-                  <p class="font-medium text-white">${p.description || 'No description'}</p>
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-white truncate">${p.description || 'No description'}</p>
                   <p class="text-xs text-gray-500 mt-1">Agent: ${p.agent_id} · ${p.recipient}</p>
+                  ${p.tx_hash ? `<p class="text-xs text-gray-600 mt-1 font-mono truncate">Tx: ${p.tx_hash}</p>` : ''}
                 </div>
-                <span class="px-2.5 py-1 rounded-full text-xs font-medium border ${statusClass}">${p.status}</span>
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium border ${statusClass} ml-3 flex-shrink-0">${p.status}</span>
               </div>
-              <div class="flex items-center justify-between mt-3">
+              <div class="flex items-center justify-between mt-3 gap-2">
                 <span class="text-near font-bold text-lg">${p.amount} NEAR</span>
-                ${p.status === 'PENDING' ? `
-                  <button onclick="approveProposal(${p.id})" class="bg-near text-black text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-green-400 transition">
-                    Approve & Send
-                  </button>
-                ` : ''}
-                ${p.status === 'APPROVED' ? `
-                  <a href="#" onclick="viewTx(${p.id}); return false;" class="text-near text-sm hover:underline flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                    View on Explorer
-                  </a>
-                ` : ''}
+                <div class="flex items-center gap-2">
+                  ${p.status === 'PENDING' ? `
+                    <button onclick="approveProposal(${p.id})" class="bg-near text-black text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-green-400 transition">
+                      Approve & Send
+                    </button>
+                    <button onclick="rejectProposal(${p.id})" class="bg-red-500/20 text-red-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-red-500/30 transition border border-red-500/30">
+                      Reject
+                    </button>
+                  ` : ''}
+                  ${p.status === 'APPROVED' && p.tx_hash ? `
+                    <a href="#" onclick="viewTx('${p.tx_hash}'); return false;" class="text-near text-sm hover:underline flex items-center gap-1">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                      View on Explorer
+                    </a>
+                  ` : ''}
+                </div>
               </div>
               <p class="text-xs text-gray-600 mt-2">${new Date(p.created_at).toLocaleString()}</p>
             </div>
@@ -224,20 +274,58 @@
         const res = await fetch(`${API_BASE}/api/proposals/${id}/approve`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
-          alert(`✅ Transaction sent! Hash: ${data.transactionHash}\nView: ${data.explorerUrl}`);
+          showToast(`✅ Transaction sent! Hash: ${data.transactionHash.substring(0, 12)}...`, 'success');
         } else {
-          alert(`❌ Failed: ${data.error || data.message}`);
+          showToast(`❌ Failed: ${data.error || data.message}`, 'error');
         }
         loadProposals();
         loadLimits();
       } catch (err) {
-        alert('Error: ' + err.message);
+        showToast('Error: ' + err.message, 'error');
       }
+    }
+
+    // Reject a proposal
+    async function rejectProposal(id) {
+      try {
+        const res = await fetch(`${API_BASE}/api/proposals/${id}/reject`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Proposal rejected successfully.', 'success');
+        } else {
+          showToast(`❌ Failed: ${data.error || data.message}`, 'error');
+        }
+        loadProposals();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // Reset daily limit
+    async function resetDailyLimit() {
+      try {
+        const res = await fetch(`${API_BASE}/api/limits/reset`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Daily spending limit reset to 0.', 'success');
+        } else {
+          showToast(`❌ Failed: ${data.error || data.message}`, 'error');
+        }
+        loadLimits();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // View transaction on NEAR Explorer
+    function viewTx(txHash) {
+      window.open(`https://explorer.testnet.near.org/transactions/${txHash}`, '_blank');
     }
 
     // Handle simulate form
     document.getElementById('simulate-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setButtonLoading('sim-submit-btn', 'sim-btn-text', 'sim-spinner', true);
       const body = {
         agent_id: document.getElementById('sim-agent').value,
         amount: parseFloat(document.getElementById('sim-amount').value),
@@ -252,13 +340,17 @@
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`Proposal created: ${data.evaluation.result}\nReason: ${data.evaluation.reason}`);
+          const emoji = data.evaluation.result === 'PENDING' ? '✅' : '🚫';
+          showToast(`${emoji} ${data.evaluation.result}: ${data.evaluation.reason}`, data.evaluation.result === 'PENDING' ? 'success' : 'error');
         } else {
-          alert(`Error: ${data.error}`);
+          showToast(`❌ Error: ${data.error}`, 'error');
         }
         loadProposals();
+        loadLimits();
       } catch (err) {
-        alert('Error: ' + err.message);
+        showToast('Error: ' + err.message, 'error');
+      } finally {
+        setButtonLoading('sim-submit-btn', 'sim-btn-text', 'sim-spinner', false);
       }
     });
 
@@ -267,22 +359,6 @@
     loadLimits();
     loadRules();
     loadProposals();
-
-    // View transaction on NEAR Explorer
-    async function viewTx(id) {
-      try {
-        const res = await fetch(`${API_BASE}/api/proposals`);
-        const data = await res.json();
-        const proposal = data.proposals.find(p => p.id === id);
-        if (proposal && proposal.status === 'APPROVED' && proposal.tx_hash) {
-          window.open(`https://explorer.testnet.near.org/transactions/${proposal.tx_hash}`, '_blank');
-        } else {
-          alert('Transaction hash not found for this proposal.');
-        }
-      } catch (err) {
-        console.error('Error viewing tx:', err);
-      }
-    }
 
     // Auto-refresh every 10 seconds
     setInterval(() => {
