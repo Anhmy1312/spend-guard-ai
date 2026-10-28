@@ -251,7 +251,7 @@ node src/test.js
 - **Track:** AI & Agents / Autonomous Payments
 - **Hackathon:** NEAR Hackathon 2026 (Nov 1 – Nov 14, 2026)
 - **Developer:** Solo student developer
-- **Repository:** https://github.com/your-username/spend-guard-ai
+- **Repository:** https://github.com/Anhmy1312/spend-guard-ai
 
 ---
 
