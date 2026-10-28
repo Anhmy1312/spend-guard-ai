@@ -346,6 +346,77 @@ app.post('/api/limits/reset', (req, res) => {
   });
 });
 
+/**
+ * =====================
+ * STATISTICS & EXPORT ENDPOINTS
+ * =====================
+ */
+
+// Get spending statistics for chart
+app.get('/api/stats', (req, res) => {
+  const query = `
+    SELECT 
+      DATE(created_at) as date,
+      SUM(amount) as total_spent,
+      COUNT(*) as proposal_count
+    FROM proposals 
+    WHERE status = 'APPROVED'
+    GROUP BY DATE(created_at)
+    ORDER BY DATE(created_at) ASC
+    LIMIT 7
+  `;
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ stats: rows });
+  });
+});
+
+// Export logs to CSV
+app.get('/api/logs/export', (req, res) => {
+  const query = `
+    SELECT 
+      l.timestamp,
+      l.proposal_id,
+      p.agent_id,
+      p.amount,
+      p.recipient,
+      p.status,
+      l.message
+    FROM logs l
+    LEFT JOIN proposals p ON l.proposal_id = p.id
+    ORDER BY l.timestamp DESC
+  `;
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Build CSV
+    const headers = ['Timestamp', 'Proposal ID', 'Agent ID', 'Amount (NEAR)', 'Recipient', 'Status', 'Message'];
+    const csvRows = [headers.join(',')];
+    
+    rows.forEach(row => {
+      const values = [
+        `"${row.timestamp || ''}"`,
+        row.proposal_id || '',
+        `"${row.agent_id || ''}"`,
+        row.amount || 0,
+        `"${row.recipient || ''}"`,
+        `"${row.status || ''}"`,
+        `"${(row.message || '').replace(/"/g, '""')}"`
+      ];
+      csvRows.push(values.join(','));
+    });
+
+    const csv = csvRows.join('\\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=spendguard-logs.csv');
+    res.send(csv);
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`SpendGuard AI backend server is running on port ${PORT}`);

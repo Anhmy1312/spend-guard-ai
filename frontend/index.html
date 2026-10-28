@@ -1,18 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SpendGuard AI — Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
             near: '#00EC97',
             dark: '#0a0a0a',
             card: '#1a1a1a',
+            lightbg: '#f3f4f6',
+            lightcard: '#ffffff',
           }
         }
       }
@@ -26,9 +30,20 @@
     .spinner { animation: spin 1s linear infinite; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .toast { animation: slideIn 0.3s ease-out; }
+    .light .bg-dark { background-color: #f3f4f6; }
+    .light .bg-card { background-color: #ffffff; }
+    .light .text-white { color: #111827; }
+    .light .text-gray-400 { color: #6b7280; }
+    .light .text-gray-500 { color: #9ca3af; }
+    .light .text-gray-300 { color: #374151; }
+    .light .text-gray-600 { color: #9ca3af; }
+    .light .border-gray-800 { border-color: #e5e7eb; }
+    .light .bg-gray-900 { background-color: #f9fafb; }
+    .light .bg-gray-800 { background-color: #e5e7eb; }
+    .light .border-gray-700 { border-color: #d1d5db; }
   </style>
 </head>
-<body class="bg-dark text-white min-h-screen">
+<body class="bg-dark text-white min-h-screen transition-colors duration-300">
   <div class="container mx-auto px-4 py-6 max-w-6xl">
     
     <!-- Header -->
@@ -38,6 +53,9 @@
         <p class="text-gray-400 text-sm mt-1">AI Agent Spending Control & Safety Layer on NEAR</p>
       </div>
       <div class="mt-4 md:mt-0 flex items-center gap-3">
+        <button onclick="toggleTheme()" id="theme-toggle" class="p-2 rounded-lg bg-gray-800 border border-gray-700 hover:border-near transition" title="Toggle dark/light mode">
+          <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
         <span class="text-sm text-gray-400">NEAR Testnet</span>
         <span id="wallet-status" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-800 border border-gray-700">
           Connecting...
@@ -106,8 +124,27 @@
 
       </div>
 
-      <!-- Right Column: Proposals List -->
-      <div class="lg:col-span-2">
+      <!-- Right Column: Chart + Proposals -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Spending Chart Card -->
+        <div class="bg-card rounded-xl p-5 border border-gray-800">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+              <svg class="w-5 h-5 text-near" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+              Spending Statistics
+            </h2>
+            <button onclick="exportLogs()" class="text-xs text-gray-400 hover:text-near transition flex items-center gap-1" title="Export logs to CSV">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              Export CSV
+            </button>
+          </div>
+          <div class="relative h-48">
+            <canvas id="spending-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Proposals List Card -->
         <div class="bg-card rounded-xl p-5 border border-gray-800">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold">AI Action Proposals</h2>
@@ -117,6 +154,7 @@
             <!-- Loaded dynamically -->
           </div>
         </div>
+
       </div>
 
     </div>
@@ -127,6 +165,7 @@
 
   <script>
     const API_BASE = 'http://localhost:3000';
+    let spendingChart = null;
 
     // Toast notification
     function showToast(message, type = 'success') {
@@ -158,6 +197,33 @@
         spinner.classList.add('hidden');
       }
     }
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      if (isDark) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        localStorage.setItem('theme', 'light');
+        document.getElementById('theme-icon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+      } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('theme-icon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+      }
+      updateChartTheme();
+    }
+
+    // Apply saved theme on load
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+      }
+    })();
 
     // Load NEAR wallet status
     async function loadNearStatus() {
@@ -280,6 +346,7 @@
         }
         loadProposals();
         loadLimits();
+        loadStats();
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
       }
@@ -312,6 +379,7 @@
           showToast(`❌ Failed: ${data.error || data.message}`, 'error');
         }
         loadLimits();
+        loadStats();
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
       }
@@ -320,6 +388,82 @@
     // View transaction on NEAR Explorer
     function viewTx(txHash) {
       window.open(`https://explorer.testnet.near.org/transactions/${txHash}`, '_blank');
+    }
+
+    // Export logs to CSV
+    function exportLogs() {
+      window.open(`${API_BASE}/api/logs/export`, '_blank');
+      showToast('Downloading CSV...', 'info');
+    }
+
+    // Load spending stats and render chart
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API_BASE}/api/stats`);
+        const data = await res.json();
+        const labels = data.stats.map(s => s.date);
+        const values = data.stats.map(s => s.total_spent);
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#9ca3af' : '#374151';
+        const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+        if (spendingChart) {
+          spendingChart.data.labels = labels;
+          spendingChart.data.datasets[0].data = values;
+          spendingChart.options.scales.x.ticks.color = textColor;
+          spendingChart.options.scales.y.ticks.color = textColor;
+          spendingChart.options.scales.x.grid.color = gridColor;
+          spendingChart.options.scales.y.grid.color = gridColor;
+          spendingChart.update();
+        } else {
+          const ctx = document.getElementById('spending-chart').getContext('2d');
+          spendingChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: 'NEAR Spent',
+                data: values,
+                backgroundColor: 'rgba(0, 236, 151, 0.6)',
+                borderColor: 'rgba(0, 236, 151, 1)',
+                borderWidth: 1,
+                borderRadius: 6,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: (ctx) => `${ctx.parsed.y} NEAR`
+                  }
+                }
+              },
+              scales: {
+                x: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor }, beginAtZero: true }
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    // Update chart theme colors
+    function updateChartTheme() {
+      if (!spendingChart) return;
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#9ca3af' : '#374151';
+      const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+      spendingChart.options.scales.x.ticks.color = textColor;
+      spendingChart.options.scales.y.ticks.color = textColor;
+      spendingChart.options.scales.x.grid.color = gridColor;
+      spendingChart.options.scales.y.grid.color = gridColor;
+      spendingChart.update();
     }
 
     // Handle simulate form
@@ -347,6 +491,7 @@
         }
         loadProposals();
         loadLimits();
+        loadStats();
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
       } finally {
@@ -359,12 +504,14 @@
     loadLimits();
     loadRules();
     loadProposals();
+    loadStats();
 
     // Auto-refresh every 10 seconds
     setInterval(() => {
       loadProposals();
       loadLimits();
       loadNearStatus();
+      loadStats();
     }, 10000);
   </script>
 </body>
