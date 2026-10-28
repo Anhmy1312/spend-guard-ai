@@ -21,6 +21,7 @@
    - `recipient` (TEXT)
    - `description` (TEXT)
    - `status` (TEXT) -- 'PENDING', 'APPROVED', or 'BLOCKED'
+   - `tx_hash` (TEXT) -- NEAR transaction hash (nullable)
    - `created_at` (DATETIME)
 
 4. **logs**
