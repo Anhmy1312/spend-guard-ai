@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpendGuard AI — Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            near: '#00EC97',
+            dark: '#0a0a0a',
+            card: '#1a1a1a',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .status-pending { @apply bg-yellow-500/20 text-yellow-300 border-yellow-500/30; }
+    .status-approved { @apply bg-green-500/20 text-green-300 border-green-500/30; }
+    .status-blocked { @apply bg-red-500/20 text-red-300 border-red-500/30; }
+  </style>
+</head>
+<body class="bg-dark text-white min-h-screen">
+  <div class="container mx-auto px-4 py-6 max-w-6xl">
+    
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row items-center justify-between mb-8 pb-6 border-b border-gray-800">
+      <div>
+        <h1 class="text-3xl font-bold text-near">SpendGuard AI</h1>
+        <p class="text-gray-400 text-sm mt-1">AI Agent Spending Control & Safety Layer on NEAR</p>
+      </div>
+      <div class="mt-4 md:mt-0 flex items-center gap-3">
+        <span class="text-sm text-gray-400">NEAR Testnet</span>
+        <span id="wallet-status" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-800 border border-gray-700">
+          Connecting...
+        </span>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left Column: Settings & Limits -->
+      <div class="lg:col-span-1 space-y-6">
+        
+        <!-- Spending Limits Card -->
+        <div class="bg-card rounded-xl p-5 border border-gray-800">
+          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-near" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Spending Limits
+          </h2>
+          <div id="limits-list" class="space-y-3">
+            <!-- Loaded dynamically -->
+          </div>
+        </div>
+
+        <!-- Safety Rules Card -->
+        <div class="bg-card rounded-xl p-5 border border-gray-800">
+          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            Safety Rules
+          </h2>
+          <div id="rules-list" class="space-y-2 text-sm">
+            <!-- Loaded dynamically -->
+          </div>
+        </div>
+
+        <!-- AI Simulator Card -->
+        <div class="bg-card rounded-xl p-5 border border-gray-800">
+          <h2 class="text-lg font-semibold mb-4">Simulate AI Agent</h2>
+          <form id="simulate-form" class="space-y-3">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Agent ID</label>
+              <input type="text" id="sim-agent" value="ai-agent-alpha" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Amount (NEAR)</label>
+              <input type="number" id="sim-amount" step="0.1" value="1.0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Recipient</label>
+              <input type="text" id="sim-recipient" value="alice.testnet" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Description</label>
+              <input type="text" id="sim-desc" value="Payment for compute service" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
+            </div>
+            <button type="submit" class="w-full bg-near text-black font-semibold py-2 rounded-lg hover:bg-green-400 transition">
+              Submit AI Proposal
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Proposals List -->
+      <div class="lg:col-span-2">
+        <div class="bg-card rounded-xl p-5 border border-gray-800">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">AI Action Proposals</h2>
+            <button onclick="loadProposals()" class="text-sm text-near hover:underline">Refresh</button>
+          </div>
+          <div id="proposals-list" class="space-y-4">
+            <!-- Loaded dynamically -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000';
+
+    // Load NEAR wallet status
+    async function loadNearStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/api/near/status`);
+        const data = await res.json();
+        const el = document.getElementById('wallet-status');
+        if (data.connected) {
+          el.textContent = `Connected · Block #${data.latestBlockHeight}`;
+          el.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30';
+        } else {
+          el.textContent = 'Disconnected';
+          el.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-300 border border-red-500/30';
+        }
+      } catch (err) {
+        document.getElementById('wallet-status').textContent = 'Offline';
+      }
+    }
+
+    // Load spending limits
+    async function loadLimits() {
+      try {
+        const res = await fetch(`${API_BASE}/api/limits`);
+        const data = await res.json();
+        const container = document.getElementById('limits-list');
+        container.innerHTML = data.limits.map(limit => `
+          <div class="bg-gray-900 rounded-lg p-3 border border-gray-800">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-sm font-medium">${limit.type === 'DAILY' ? 'Daily Limit' : 'Per-TX Limit'}</span>
+              <span class="text-near font-bold">${limit.max_amount} NEAR</span>
+            </div>
+            <div class="w-full bg-gray-800 rounded-full h-2">
+              <div class="bg-near h-2 rounded-full" style="width: ${Math.min((limit.current_spent / limit.max_amount) * 100, 100)}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Spent: ${limit.current_spent} / ${limit.max_amount} NEAR</p>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load limits:', err);
+      }
+    }
+
+    // Load safety rules
+    async function loadRules() {
+      try {
+        const res = await fetch(`${API_BASE}/api/rules`);
+        const data = await res.json();
+        const container = document.getElementById('rules-list');
+        container.innerHTML = data.rules.map(rule => `
+          <div class="flex items-center gap-2 p-2 bg-gray-900 rounded-lg border border-gray-800">
+            <span class="px-2 py-0.5 rounded text-xs font-medium ${rule.action === 'BLOCK' ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}">${rule.action}</span>
+            <span class="text-gray-300">${rule.name}</span>
+            <span class="text-gray-500 text-xs ml-auto">${rule.pattern}</span>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load rules:', err);
+      }
+    }
+
+    // Load proposals
+    async function loadProposals() {
+      try {
+        const res = await fetch(`${API_BASE}/api/proposals`);
+        const data = await res.json();
+        const container = document.getElementById('proposals-list');
+        if (!data.proposals || data.proposals.length === 0) {
+          container.innerHTML = '<p class="text-gray-500 text-center py-8">No proposals yet. Simulate an AI agent action!</p>';
+          return;
+        }
+        container.innerHTML = data.proposals.map(p => {
+          const statusClass = p.status === 'PENDING' ? 'status-pending' : p.status === 'APPROVED' ? 'status-approved' : 'status-blocked';
+          return `
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+              <div class="flex items-start justify-between mb-2">
+                <div>
+                  <p class="font-medium text-white">${p.description || 'No description'}</p>
+                  <p class="text-xs text-gray-500 mt-1">Agent: ${p.agent_id} · ${p.recipient}</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium border ${statusClass}">${p.status}</span>
+              </div>
+              <div class="flex items-center justify-between mt-3">
+                <span class="text-near font-bold text-lg">${p.amount} NEAR</span>
+                ${p.status === 'PENDING' ? `
+                  <button onclick="approveProposal(${p.id})" class="bg-near text-black text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-green-400 transition">
+                    Approve & Send
+                  </button>
+                ` : ''}
+                ${p.status === 'APPROVED' ? `
+                  <a href="#" onclick="viewTx(${p.id}); return false;" class="text-near text-sm hover:underline flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    View on Explorer
+                  </a>
+                ` : ''}
+              </div>
+              <p class="text-xs text-gray-600 mt-2">${new Date(p.created_at).toLocaleString()}</p>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Failed to load proposals:', err);
+      }
+    }
+
+    // Approve a proposal
+    async function approveProposal(id) {
+      try {
+        const res = await fetch(`${API_BASE}/api/proposals/${id}/approve`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Transaction sent! Hash: ${data.transactionHash}\nView: ${data.explorerUrl}`);
+        } else {
+          alert(`❌ Failed: ${data.error || data.message}`);
+        }
+        loadProposals();
+        loadLimits();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // Handle simulate form
+    document.getElementById('simulate-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        agent_id: document.getElementById('sim-agent').value,
+        amount: parseFloat(document.getElementById('sim-amount').value),
+        recipient: document.getElementById('sim-recipient').value,
+        description: document.getElementById('sim-desc').value,
+      };
+      try {
+        const res = await fetch(`${API_BASE}/api/proposals/simulate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Proposal created: ${data.evaluation.result}\nReason: ${data.evaluation.reason}`);
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+        loadProposals();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    // Initialize
+    loadNearStatus();
+    loadLimits();
+    loadRules();
+    loadProposals();
+
+    // View transaction on NEAR Explorer
+    async function viewTx(id) {
+      try {
+        const res = await fetch(`${API_BASE}/api/proposals`);
+        const data = await res.json();
+        const proposal = data.proposals.find(p => p.id === id);
+        if (proposal && proposal.status === 'APPROVED' && proposal.tx_hash) {
+          window.open(`https://explorer.testnet.near.org/transactions/${proposal.tx_hash}`, '_blank');
+        } else {
+          alert('Transaction hash not found for this proposal.');
+        }
+      } catch (err) {
+        console.error('Error viewing tx:', err);
+      }
+    }
+
+    // Auto-refresh every 10 seconds
+    setInterval(() => {
+      loadProposals();
+      loadLimits();
+      loadNearStatus();
+    }, 10000);
+  </script>
+</body>
+</html>
