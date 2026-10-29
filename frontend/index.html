@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,29 +24,93 @@
     }
   </script>
   <style>
-    .status-pending { @apply bg-yellow-500/20 text-yellow-300 border-yellow-500/30; }
-    .status-approved { @apply bg-green-500/20 text-green-300 border-green-500/30; }
-    .status-blocked { @apply bg-red-500/20 text-red-300 border-red-500/30; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { animation: spin 1s linear infinite; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    .toast { animation: slideIn 0.3s ease-out; }
-    .light .bg-dark { background-color: #f3f4f6; }
-    .light .bg-card { background-color: #ffffff; }
-    .light .text-white { color: #111827; }
-    .light .text-gray-400 { color: #6b7280; }
-    .light .text-gray-500 { color: #9ca3af; }
-    .light .text-gray-300 { color: #374151; }
-    .light .text-gray-600 { color: #9ca3af; }
-    .light .border-gray-800 { border-color: #e5e7eb; }
-    .light .bg-gray-900 { background-color: #f9fafb; }
-    .light .bg-gray-800 { background-color: #e5e7eb; }
-    .light .border-gray-700 { border-color: #d1d5db; }
+    .status-pending {
+      @apply bg-yellow-500/20 text-yellow-300 border-yellow-500/30;
+    }
+
+    .status-approved {
+      @apply bg-green-500/20 text-green-300 border-green-500/30;
+    }
+
+    .status-blocked {
+      @apply bg-red-500/20 text-red-300 border-red-500/30;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .light .bg-dark {
+      background-color: #f3f4f6;
+    }
+
+    .light .bg-card {
+      background-color: #ffffff;
+    }
+
+    .light .text-white {
+      color: #111827;
+    }
+
+    .light .text-gray-400 {
+      color: #6b7280;
+    }
+
+    .light .text-gray-500 {
+      color: #9ca3af;
+    }
+
+    .light .text-gray-300 {
+      color: #374151;
+    }
+
+    .light .text-gray-600 {
+      color: #9ca3af;
+    }
+
+    .light .border-gray-800 {
+      border-color: #e5e7eb;
+    }
+
+    .light .bg-gray-900 {
+      background-color: #f9fafb;
+    }
+
+    .light .bg-gray-800 {
+      background-color: #e5e7eb;
+    }
+
+    .light .border-gray-700 {
+      border-color: #d1d5db;
+    }
   </style>
 </head>
+
 <body class="bg-dark text-white min-h-screen transition-colors duration-300">
   <div class="container mx-auto px-4 py-6 max-w-6xl">
-    
+
     <!-- Header -->
     <header class="flex flex-col md:flex-row items-center justify-between mb-8 pb-6 border-b border-gray-800">
       <div>
@@ -53,8 +118,13 @@
         <p class="text-gray-400 text-sm mt-1">AI Agent Spending Control & Safety Layer on NEAR</p>
       </div>
       <div class="mt-4 md:mt-0 flex items-center gap-3">
-        <button onclick="toggleTheme()" id="theme-toggle" class="p-2 rounded-lg bg-gray-800 border border-gray-700 hover:border-near transition" title="Toggle dark/light mode">
-          <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        <button onclick="toggleTheme()" id="theme-toggle"
+          class="p-2 rounded-lg bg-gray-800 border border-gray-700 hover:border-near transition"
+          title="Toggle dark/light mode">
+          <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
         </button>
         <span class="text-sm text-gray-400">NEAR Testnet</span>
         <span id="wallet-status" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-800 border border-gray-700">
@@ -64,18 +134,23 @@
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
+
       <!-- Left Column: Settings & Limits -->
       <div class="lg:col-span-1 space-y-6">
-        
+
         <!-- Spending Limits Card -->
         <div class="bg-card rounded-xl p-5 border border-gray-800">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold flex items-center gap-2">
-              <svg class="w-5 h-5 text-near" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <svg class="w-5 h-5 text-near" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                </path>
+              </svg>
               Spending Limits
             </h2>
-            <button onclick="resetDailyLimit()" class="text-xs text-gray-400 hover:text-near transition" title="Reset daily spent to 0">
+            <button onclick="resetDailyLimit()" class="text-xs text-gray-400 hover:text-near transition"
+              title="Reset daily spent to 0">
               Reset Daily
             </button>
           </div>
@@ -87,7 +162,11 @@
         <!-- Safety Rules Card -->
         <div class="bg-card rounded-xl p-5 border border-gray-800">
           <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+              </path>
+            </svg>
             Safety Rules
           </h2>
           <div id="rules-list" class="space-y-2 text-sm">
@@ -101,23 +180,31 @@
           <form id="simulate-form" class="space-y-3">
             <div>
               <label class="block text-xs text-gray-400 mb-1">Agent ID</label>
-              <input type="text" id="sim-agent" value="ai-agent-alpha" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
+              <input type="text" id="sim-agent" value="ai-agent-alpha"
+                class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
             </div>
             <div>
               <label class="block text-xs text-gray-400 mb-1">Amount (NEAR)</label>
-              <input type="number" id="sim-amount" step="0.1" value="1.0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
+              <input type="number" id="sim-amount" step="0.1" value="1.0"
+                class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
             </div>
             <div>
               <label class="block text-xs text-gray-400 mb-1">Recipient</label>
-              <input type="text" id="sim-recipient" value="alice.testnet" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
+              <input type="text" id="sim-recipient" value="alice.testnet"
+                class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
             </div>
             <div>
               <label class="block text-xs text-gray-400 mb-1">Description</label>
-              <input type="text" id="sim-desc" value="Payment for compute service" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
+              <input type="text" id="sim-desc" value="Payment for compute service"
+                class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-near">
             </div>
-            <button type="submit" id="sim-submit-btn" class="w-full bg-near text-black font-semibold py-2 rounded-lg hover:bg-green-400 transition flex items-center justify-center gap-2">
+            <button type="submit" id="sim-submit-btn"
+              class="w-full bg-near text-black font-semibold py-2 rounded-lg hover:bg-green-400 transition flex items-center justify-center gap-2">
               <span id="sim-btn-text">Submit AI Proposal</span>
-              <svg id="sim-spinner" class="w-4 h-4 spinner hidden" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+              <svg id="sim-spinner" class="w-4 h-4 spinner hidden" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
             </button>
           </form>
         </div>
@@ -131,11 +218,21 @@
         <div class="bg-card rounded-xl p-5 border border-gray-800">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold flex items-center gap-2">
-              <svg class="w-5 h-5 text-near" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+              <svg class="w-5 h-5 text-near" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                </path>
+              </svg>
               Spending Statistics
             </h2>
-            <button onclick="exportLogs()" class="text-xs text-gray-400 hover:text-near transition flex items-center gap-1" title="Export logs to CSV">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <button onclick="exportLogs()"
+              class="text-xs text-gray-400 hover:text-near transition flex items-center gap-1"
+              title="Export logs to CSV">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                </path>
+              </svg>
               Export CSV
             </button>
           </div>
@@ -172,8 +269,8 @@
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
       const bgColor = type === 'success' ? 'bg-green-500/20 border-green-500/30 text-green-300' :
-                      type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-300' :
-                      'bg-blue-500/20 border-blue-500/30 text-blue-300';
+        type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-300' :
+          'bg-blue-500/20 border-blue-500/30 text-blue-300';
       toast.className = `toast px-4 py-3 rounded-lg border ${bgColor} text-sm max-w-sm shadow-lg`;
       toast.textContent = message;
       container.appendChild(toast);
@@ -217,7 +314,7 @@
     }
 
     // Apply saved theme on load
-    (function() {
+    (function () {
       const saved = localStorage.getItem('theme');
       if (saved === 'light') {
         document.documentElement.classList.remove('dark');
@@ -515,4 +612,5 @@
     }, 10000);
   </script>
 </body>
+
 </html>
