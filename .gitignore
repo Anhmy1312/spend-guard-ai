@@ -28,3 +28,7 @@ npm-debug.log*
 *.wav
 *.avi
 *.mov
+
+# Prompt files
+Bo_prompt_*.docx
+~$_prompt_*.docx
